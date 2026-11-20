@@ -1,0 +1,46 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  color: #f3f4e9;
+  background: #171b17;
+  --target: #d4fd69;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; }
+
+.studio { max-width: 78rem; margin: auto; padding: clamp(1.25rem, 4vw, 3.5rem); }
+header a { color: #c7cdbf; text-underline-offset: .2em; }
+header h1 { margin: 1.5rem 0 .1em; font-size: clamp(2.4rem, 8vw, 5.2rem); letter-spacing: -.07em; line-height: 1; }
+header p { color: #d0d5c7; margin: .9rem 0 1.8rem; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); gap: 1rem; align-items: start; }
+.stage, .controls { min-width: 0; margin: 0; border: 1px solid #42493d; border-radius: 1rem; background: #242a22; }
+.stage { padding: .75rem; }
+.photo { display: block; max-width: 100%; max-height: 76vh; width: auto; height: auto; margin: auto; border-radius: .55rem; }
+.empty { display: grid; min-height: 17rem; place-content: center; border: 1px dashed #626d5d; border-radius: .55rem; color: #c7cdbf; text-align: center; }
+figcaption { color: #bdc6b7; font-size: .875rem; padding: .75rem .25rem .1rem; overflow-wrap: anywhere; }
+
+.controls { display: grid; gap: .75rem; padding: 1.15rem; }
+.controls label { font-weight: 650; }
+button, input { font: inherit; }
+input { width: 100%; color: #d0d5c7; }
+input::file-selector-button, button { min-height: 2.75rem; border-radius: .55rem; padding: .55rem .9rem; font-weight: 650; cursor: pointer; }
+input::file-selector-button, button.secondary { background: #343c31; color: #f3f4e9; border: 1px solid #596453; }
+button { background: var(--target); color: #17200d; border: 1px solid transparent; }
+button:disabled, input:disabled { opacity: .55; cursor: default; }
+:focus-visible { outline: 2px solid #72cbff; outline-offset: 3px; }
+.controls p { margin: 0; overflow-wrap: anywhere; }
+#status { color: #d0d5c7; font-size: .9rem; }
+#status[data-error] { color: #ffbdae; }
+.legend { color: var(--target); font-size: .875rem; }
+#suggestion { font-size: 1.1rem; line-height: 1.5; }
+details { padding-top: .8rem; border-top: 1px solid #42493d; }
+summary { width: fit-content; cursor: pointer; color: #d0d5c7; }
+details button { display: block; width: 100%; margin-top: .6rem; }
+
+@media (max-width: 47rem) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .empty { min-height: 10rem; }
+  .photo { max-height: 62vh; }
+}

@@ -1,7 +1,19 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-// 将拍摄页和素材准备页都纳入发布产物。
+const privateDirectories = ['**/.pose-models/**', '**/.pose-local/**', '**/.venv/**'];
+
 export default defineConfig({
-  build: { rollupOptions: { input: { main: resolve('index.html'), material: resolve('material.html') } } }
+  server: {
+    watch: { ignored: privateDirectories },
+    fs: { deny: [
+      '.env', '.env.*', '*.{crt,pem,key,p12,pfx,cer,der}', '.npmrc', '.yarnrc.yml',
+      '**/.git/**', ...privateDirectories,
+    ] },
+  },
+  build: { rollupOptions: { input: {
+    main: resolve('index.html'),
+    material: resolve('material.html'),
+    shuttermuse: resolve('shuttermuse.html'),
+  } } },
 });

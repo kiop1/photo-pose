@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#171b17">
+    <title>ShutterMuse · 本机试拍</title>
+  </head>
+  <body>
+    <main class="studio">
+      <header>
+        <a href="./">← 去相机拍照</a>
+        <h1>ShutterMuse</h1>
+        <p>上传一张照片，看看下次拍摄可以试试什么。</p>
+      </header>
+
+      <div class="workspace">
+        <figure class="stage">
+          <canvas id="preview" class="photo" role="img" aria-label="原片" hidden>照片预览</canvas>
+          <div class="empty" id="empty">选一张照片，或使用示例</div>
+          <figcaption id="filename" hidden></figcaption>
+        </figure>
+
+        <section class="controls" aria-label="试拍建议">
+          <label for="file">照片</label>
+          <input id="file" type="file" accept="image/jpeg,image/png,image/webp">
+          <button id="sample" type="button" class="secondary">使用示例照片</button>
+          <div>
+            <p id="status" role="status">请选择 JPEG、PNG 或 WebP 照片。</p>
+            <div aria-live="polite"><p id="suggestion" hidden></p></div>
+          </div>
+          <button id="retry-advice" type="button" class="secondary" hidden>重试拍照建议</button>
+          <button id="original" type="button" class="secondary" hidden>查看原片</button>
+          <p id="target-legend" class="legend" hidden>绿色骨架表示建议姿势</p>
+          <details>
+            <summary>姿势与构图工具</summary>
+            <button id="pose" type="button" class="secondary" disabled>查看姿势骨架</button>
+            <button id="composition" type="button" class="secondary" disabled>查看构图建议</button>
+            <button id="composition-sample" type="button" class="secondary">使用构图示例</button>
+          </details>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/shuttermuse.js"></script>
+  </body>
+</html>
