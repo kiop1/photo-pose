@@ -1,0 +1,7 @@
+[
+  { "id": "people-seated", "title": "庭院坐姿", "task": "pose" },
+  { "id": "people-standing", "title": "紫墙前的站姿", "task": "pose" },
+  { "id": "people-astronaut", "title": "航天员肖像", "task": "pose" },
+  { "id": "scene-bench", "title": "黄昏长椅", "task": "scene-pose" },
+  { "id": "scene-alley", "title": "雾中小巷", "task": "scene-pose" }
+]

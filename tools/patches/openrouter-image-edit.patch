@@ -1,0 +1,285 @@
+--- a/docs/providers/README.md
++++ b/docs/providers/README.md
+@@ -8,3 +8,10 @@
+ - provider adapter tests
+ - provider registry and routing migrations under `migrations/mysql/`
+ - `docs_legacy_20260529/openrouter/` only for historical OpenRouter reference
++
++## OpenRouter image adapter
++
++The gateway maps image generation and editing to OpenRouter Chat Completions.
++Edit requests send the prompt and the reference images as message content.
++The gateway accepts `images`, `image_url`, or `image_data_uri` in that
++precedence order. Configure a model with image input and output for editing.
+--- a/internal/module/provider/adapter/openrouter/image.go
++++ b/internal/module/provider/adapter/openrouter/image.go
+@@ -1,8 +1,10 @@
+ package openrouter
+ 
+ import (
++	"cmp"
+ 	"context"
+ 	"net/http"
++	"slices"
+ 	"strings"
+ 
+ 	"agent-gateway/internal/logging"
+@@ -38,13 +40,10 @@
+ }
+ 
+ func (a *openRouterImagesAdapter) Edit(ctx context.Context, candidate providerdto.ProviderCandidate, req providerdto.ImageRequest) (providerdto.ImageResponse, *base.Error) {
+-	// OpenRouter 目前不支持图像编辑功能，直接返回可重试错误触发降级机制
+-	return providerdto.ImageResponse{}, &base.Error{
+-		Message:    "openrouter adapter does not support image edit action",
+-		Code:       "ACTION_NOT_SUPPORTED",
+-		HTTPStatus: http.StatusBadGateway,
+-		Retryable:  true,
++	if a == nil || a.base == nil {
++		return providerdto.ImageResponse{}, base.ProviderAdapterInvalidError()
+ 	}
++	return base.ExecuteImageRequest(ctx, a, candidate, req, base.ImageActionEdit)
+ }
+ 
+ func (a *openRouterImagesAdapter) GetRequestURL(candidate providerdto.ProviderCandidate, action base.ImageAction) (string, *base.Error) {
+@@ -82,69 +81,36 @@
+ }
+ 
+ func (a *openRouterImagesAdapter) ConvertImageRequest(candidate providerdto.ProviderCandidate, req providerdto.ImageRequest, action base.ImageAction) (map[string]any, *base.Error) {
+-	model := strings.TrimSpace(candidate.Model)
+-	if model == "" {
+-		model = strings.TrimSpace(req.Model)
+-	}
+-	if action == base.ImageActionGenerate {
+-		return map[string]any{
+-			"model":      model,
+-			"stream":     false,
+-			"modalities": []string{"image"},
+-			"messages": []map[string]any{
+-				{
+-					"role":    "user",
+-					"content": strings.TrimSpace(req.Prompt),
+-				},
+-			},
+-		}, nil
+-	}
+-	content := make([]map[string]any, 0, len(req.Images)+2)
+-	if prompt := strings.TrimSpace(req.Prompt); prompt != "" {
+-		content = append(content, map[string]any{
+-			"type": "text",
+-			"text": prompt,
+-		})
+-	}
+-	for _, image := range req.Images {
+-		url := strings.TrimSpace(image)
+-		if url == "" {
+-			continue
+-		}
+-		content = append(content, map[string]any{
+-			"type": "image_url",
+-			"image_url": map[string]any{
+-				"url": url,
+-			},
+-		})
+-	}
+-	if len(content) == 0 {
+-		if url := strings.TrimSpace(req.ImageURL); url != "" {
+-			content = append(content, map[string]any{
+-				"type": "image_url",
+-				"image_url": map[string]any{
+-					"url": url,
+-				},
+-			})
+-		} else if dataURI := strings.TrimSpace(req.ImageDataURI); dataURI != "" {
+-			content = append(content, map[string]any{
+-				"type": "image_url",
+-				"image_url": map[string]any{
+-					"url": dataURI,
+-				},
++	model := cmp.Or(strings.TrimSpace(candidate.Model), strings.TrimSpace(req.Model))
++	prompt := strings.TrimSpace(req.Prompt)
++	var content any = prompt
++	modalities := []string{"image"}
++	if action == base.ImageActionEdit {
++		parts := make([]map[string]any, 0, len(req.Images)+2)
++		parts = append(parts, map[string]any{"type": "text", "text": prompt})
++		appendImage := func(url string) {
++			parts = append(parts, map[string]any{
++				"type":      "image_url",
++				"image_url": map[string]string{"url": url},
+ 			})
+ 		}
+-	}
+-	if len(content) == 0 {
+-		content = append(content, map[string]any{
+-			"type": "text",
+-			"text": strings.TrimSpace(req.Prompt),
+-		})
++		for _, image := range req.Images {
++			if url := strings.TrimSpace(image); url != "" {
++				appendImage(url)
++			}
++		}
++		if len(parts) == 1 {
++			if url := cmp.Or(strings.TrimSpace(req.ImageURL), strings.TrimSpace(req.ImageDataURI)); url != "" {
++				appendImage(url)
++			}
++		}
++		content = parts
++		modalities = imageEditOutputModalities(model, candidate.MetadataJSON)
+ 	}
+ 	return map[string]any{
+ 		"model":      model,
+ 		"stream":     false,
+-		"modalities": []string{"image"},
++		"modalities": modalities,
+ 		"messages": []map[string]any{
+ 			{
+ 				"role":    "user",
+@@ -152,6 +118,24 @@
+ 			},
+ 		},
+ 	}, nil
++}
++
++func imageEditOutputModalities(model string, metadata map[string]any) []string {
++	formats, _ := metadata["supported_formats"].(map[string]any)
++	var textOutput bool
++	switch output := formats["output"].(type) {
++	case []string:
++		textOutput = slices.Contains(output, "text")
++	case []any:
++		textOutput = slices.Contains(output, any("text"))
++	default:
++		// Manually configured Gemini image models may lack catalog metadata.
++		textOutput = strings.HasPrefix(model, "google/gemini-")
++	}
++	if textOutput {
++		return []string{"image", "text"}
++	}
++	return []string{"image"}
+ }
+ 
+ func (a *openRouterImagesAdapter) OverrideRequest(httpRequest *http.Request, payload map[string]any, action base.ImageAction) *base.Error {
+--- a/internal/module/provider/adapter/openrouter/image_test.go
++++ b/internal/module/provider/adapter/openrouter/image_test.go
+@@ -5,6 +5,7 @@
+ 	"encoding/json"
+ 	"net/http"
+ 	"net/http/httptest"
++	"slices"
+ 	"testing"
+ 
+ 	"agent-gateway/internal/logging"
+@@ -104,3 +105,112 @@
+ 		t.Fatalf("url=%s", resp.Data[0].URL)
+ 	}
+ }
++
++func TestOpenRouterImagesAdapterEditSendsMultimodalChat(t *testing.T) {
++	const inputURL = "https://example.com/source.png"
++	const inputDataURI = "data:image/png;base64,c291cmNl"
++	cases := []struct {
++		name           string
++		candidate      providerdto.ProviderCandidate
++		request        providerdto.ImageRequest
++		wantModel      string
++		wantModalities []string
++		wantImages     []string
++	}{
++		{
++			name:           "data URI with a prompt",
++			candidate:      providerdto.ProviderCandidate{Model: "google/gemini-2.5-flash-image"},
++			request:        providerdto.ImageRequest{Model: "ignored-model", ImageDataURI: " " + inputDataURI + " "},
++			wantModel:      "google/gemini-2.5-flash-image",
++			wantModalities: []string{"image", "text"},
++			wantImages:     []string{inputDataURI},
++		},
++		{
++			name:           "URL with a prompt",
++			request:        providerdto.ImageRequest{Model: " black-forest-labs/flux.2-pro ", ImageURL: inputURL, ImageDataURI: inputDataURI},
++			wantModel:      "black-forest-labs/flux.2-pro",
++			wantModalities: []string{"image"},
++			wantImages:     []string{inputURL},
++		},
++		{
++			name: "multiple images preserve their order and take precedence",
++			candidate: providerdto.ProviderCandidate{
++				Model: "test/image-model",
++				MetadataJSON: map[string]any{
++					"supported_formats": map[string]any{"output": []any{"text", "image"}},
++				},
++			},
++			request:        providerdto.ImageRequest{Images: []string{" ", inputDataURI, " " + inputURL + " "}, ImageURL: "https://example.com/ignored.png"},
++			wantModel:      "test/image-model",
++			wantModalities: []string{"image", "text"},
++			wantImages:     []string{inputDataURI, inputURL},
++		},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			type part struct {
++				Type     string `json:"type"`
++				Text     string `json:"text"`
++				ImageURL struct {
++					URL string `json:"url"`
++				} `json:"image_url"`
++			}
++			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				if r.Method != http.MethodPost || r.URL.Path != "/api/v1/chat/completions" {
++					t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
++				}
++				if r.Header.Get("Authorization") != "Bearer test-key" || r.Header.Get("Content-Type") != "application/json" {
++					t.Error("expected bearer authentication and JSON content type")
++				}
++				var received struct {
++					Model      string   `json:"model"`
++					Stream     bool     `json:"stream"`
++					Modalities []string `json:"modalities"`
++					Messages   []struct {
++						Role    string `json:"role"`
++						Content []part `json:"content"`
++					} `json:"messages"`
++				}
++				if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
++					t.Errorf("decode request: %v", err)
++					w.WriteHeader(http.StatusBadRequest)
++					return
++				}
++				if received.Model != tc.wantModel || received.Stream || !slices.Equal(received.Modalities, tc.wantModalities) {
++					t.Errorf("model=%q stream=%v modalities=%v", received.Model, received.Stream, received.Modalities)
++				}
++				if len(received.Messages) != 1 || received.Messages[0].Role != "user" {
++					t.Errorf("messages=%+v", received.Messages)
++					w.WriteHeader(http.StatusBadRequest)
++					return
++				}
++				content := received.Messages[0].Content
++				if len(content) != len(tc.wantImages)+1 || content[0].Type != "text" || content[0].Text != "change the background to blue" {
++					t.Errorf("content=%+v", content)
++					w.WriteHeader(http.StatusBadRequest)
++					return
++				}
++				for i, want := range tc.wantImages {
++					if got := content[i+1]; got.Type != "image_url" || got.ImageURL.URL != want {
++						t.Errorf("image part %d=%+v, want %q", i, got, want)
++					}
++				}
++				w.Header().Set("Content-Type", "application/json")
++				_, _ = w.Write([]byte(`{"created":1748372400,"choices":[{"message":{"role":"assistant","content":"Edited image","images":[{"type":"image_url","image_url":{"url":"data:image/png;base64,ZWRpdGVk"}},{"type":"image_url","image_url":{"url":"https://example.com/edited.png"}}]}}]}`))
++			}))
++			defer server.Close()
++
++			adapter := NewImagesAdapter(server.URL+"/api/v1", "test-key", logging.NewNop())
++			tc.request.Prompt = "  change the background to blue  "
++			tc.request.N = 1
++			resp, err := adapter.Edit(t.Context(), tc.candidate, tc.request)
++			if err != nil {
++				t.Fatalf("edit: %v", err)
++			}
++			wantData := []providerdto.ImageDataItem{{B64JSON: "ZWRpdGVk"}, {URL: "https://example.com/edited.png"}}
++			if resp.Created != 1748372400 || !slices.Equal(resp.Data, wantData) {
++				t.Errorf("response=%+v", resp)
++			}
++		})
++	}
++}

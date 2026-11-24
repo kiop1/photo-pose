@@ -11,33 +11,86 @@
       <header>
         <a href="./">← 去相机拍照</a>
         <h1>ShutterMuse</h1>
-        <p>上传一张照片，看看下次拍摄可以试试什么。</p>
+        <p>用论文示例、独立选取的摄影实测样本或自己的照片，在本机试拍。</p>
       </header>
 
       <div class="workspace">
-        <figure class="stage">
-          <canvas id="preview" class="photo" role="img" aria-label="原片" hidden>照片预览</canvas>
-          <div class="empty" id="empty">选一张照片，或使用示例</div>
-          <figcaption id="filename" hidden></figcaption>
-        </figure>
+        <section class="stage" aria-label="照片对照">
+          <div id="pose-choices" class="pose-choices" role="group" aria-label="可选姿势" hidden></div>
+          <div id="photo-pair" class="photo-pair">
+            <figure class="source-photo">
+              <figcaption id="photo-caption" hidden><span id="photo-kind">原片</span></figcaption>
+              <canvas id="preview" class="photo" role="img" aria-label="原片" hidden>照片预览</canvas>
+              <div class="empty" id="empty">试用样本，或上传自己的照片</div>
+            </figure>
+            <div id="generated-result-slot"></div>
+          </div>
+          <div class="photo-views" role="group" aria-label="照片对比">
+            <button id="original" type="button" class="secondary" aria-pressed="true" hidden>原片</button>
+            <button id="pose" type="button" class="secondary" aria-pressed="false" hidden>查看模型建议</button>
+            <button id="following" type="button" class="secondary" aria-pressed="false" hidden>按建议裁切</button>
+          </div>
+          <p id="target-legend" class="legend" hidden>绿色骨架表示建议姿势</p>
+          <p id="filename"></p>
+        </section>
 
         <section class="controls" aria-label="试拍建议">
-          <label for="file">照片</label>
+          <label for="mode">试拍任务</label>
+          <select id="mode">
+            <option value="composition">a · 构图判断</option>
+            <option value="crop">b · 指令裁切</option>
+            <option value="scene-pose">c · 空场景姿势</option>
+            <option value="joint">d · 构图与姿势</option>
+            <option value="pose" selected>e · 人像姿势调整</option>
+          </select>
+          <div class="control-field" id="crop-options" hidden>
+            <label for="intent">裁切指令</label>
+            <select id="intent">
+              <option value="4:3">横向 4:3</option>
+              <option value="half-body">半身人像</option>
+            </select>
+          </div>
+          <form class="control-field" id="pose-direction">
+            <label for="pose-instruction">姿势要求（可选）</label>
+            <input id="pose-instruction" type="text" maxlength="300" placeholder="例如：侧身看向窗外，手自然垂下">
+            <button id="apply-direction" type="submit" class="secondary" disabled>按要求分析</button>
+          </form>
+          <label for="example">样本照片</label>
+          <div class="example-control">
+            <select id="example">
+              <optgroup label="a · 构图判断">
+                <option value="composition-wide">宽景</option>
+                <option value="composition-tilt">倾斜视角</option>
+                <option value="composition-keep">当前构图</option>
+              </optgroup>
+              <optgroup label="b · 指令裁切">
+                <option value="crop-ratio">湖边人像</option>
+                <option value="crop-half">山景半身人像</option>
+              </optgroup>
+              <optgroup label="c · 空场景姿势">
+                <option value="scene-stairs">台阶</option>
+                <option value="scene-rail">护栏</option>
+              </optgroup>
+              <optgroup label="d · 构图与姿势">
+                <option value="joint-orchard">果园</option>
+              </optgroup>
+              <optgroup label="e · 人像姿势调整">
+                <option value="refine-cafe" selected>咖啡馆</option>
+              </optgroup>
+              <optgroup id="field-examples" label="摄影实测"></optgroup>
+            </select>
+            <button id="sample" type="button" class="secondary">试用样本</button>
+          </div>
+          <p class="example-source" id="example-note">论文示例来自作者的论文图，部分保留了原图标记。<a href="./pose-examples/paper-figure.jpg">论文原图</a> · <a href="./pose-examples/local-results.jpg">论文示例的九次本机推理</a> · <a href="./field-cases/index.html">独立照片实测报告</a></p>
+          <label for="file">上传照片</label>
           <input id="file" type="file" accept="image/jpeg,image/png,image/webp">
-          <button id="sample" type="button" class="secondary">使用示例照片</button>
+          <button id="retry-advice" type="button" class="secondary" hidden>分析当前照片</button>
+          <button id="alternate-pose" type="button" class="secondary" hidden>换个姿势</button>
           <div>
-            <p id="status" role="status">请选择 JPEG、PNG 或 WebP 照片。</p>
+            <p id="status" role="status">试用样本，或上传 JPEG、PNG、WebP 照片。</p>
             <div aria-live="polite"><p id="suggestion" hidden></p></div>
           </div>
-          <button id="retry-advice" type="button" class="secondary" hidden>重试拍照建议</button>
-          <button id="original" type="button" class="secondary" hidden>查看原片</button>
-          <p id="target-legend" class="legend" hidden>绿色骨架表示建议姿势</p>
-          <details>
-            <summary>姿势与构图工具</summary>
-            <button id="pose" type="button" class="secondary" disabled>查看姿势骨架</button>
-            <button id="composition" type="button" class="secondary" disabled>查看构图建议</button>
-            <button id="composition-sample" type="button" class="secondary">使用构图示例</button>
-          </details>
+          <div id="generated-preview-slot"></div>
         </section>
       </div>
     </main>

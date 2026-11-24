@@ -1,0 +1,145 @@
+{
+  "provenance": "本地 XHS 评估集的人工目视标注。先检查缩略图总览，再检查关键原图。仅按实际输入文件的 SHA-256 命中。未命中视为 unknown。标注反映相对视角，未经相机标定，也不代表自动识别结果。",
+  "rubric": {
+    "high": "镜头明显高于主体或场景参照，并向下取景。典型线索包括同时看见主体上表面和展开的地面。",
+    "level": "大致沿主体或场景参照的高度取景。从略高于眼睛的位置轻微向下也归入此类。",
+    "low": "镜头在主体或场景参照下方，沿遮挡关系和背景判断为向上取景。",
+    "unknown": "裁切、焦点、拼图或姿态使俯仰难以判断。",
+    "confidence": "high 表示有相互支持的线索，medium 表示证据有限但视角可判断，low 表示保持 unknown。"
+  },
+  "by_sha256": {
+    "cdb0cca36b30325fc4e68a830628a2c729847eda404616a70f0173c6e1f168b0": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-01.jpg",
+      "angle": "unknown",
+      "confidence": "low",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "九宫格拼图包含多个视角，整张图没有单一机位。"
+    },
+    "11a919685d626cdf0b7a1c2f8bd702756c131a9f846918d2c9172ecdfb09211f": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-02.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "人物面部近正视，上半身略向镜头探出。机位看起来略高于视线，纵深证据不足以判断为明显俯拍。"
+    },
+    "bada96bb02e52c3cfcb772f627edad0243b420de350b86ad22752d87895e20d0": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-03.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "躯干接近正视，腰线与肩部没有明显俯视压缩。低头是人物动作。"
+    },
+    "eeced9ec554ae102513ee358d1447e1a0e15ea96c182c3cc7aecb993d35a5ed9": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-04.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "肩和躯干侧向入镜，取景主要沿花墙平视。伸向镜头的手显得大，属于前景透视。"
+    },
+    "b9f7cb6bc5fafdd90d064d0e98c9067c7b116b5660c0162fc4cc038c92e1213b": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-05.jpg",
+      "angle": "level",
+      "confidence": "high",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "人物面部近正视，砖墙边线接近竖直，地面只出现在画面下部。"
+    },
+    "bfe0effa1cded8b2e9fbd9bf0c6a61b09463ee0be238045064d3023cc6e355f5": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-06.jpg",
+      "angle": "high",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "画面同时看见肩部上缘和身后向下展开的铺砖地面，视点高于人物并向下。"
+    },
+    "fa6bcf2b9d568e81b5b18d6c0a6b24b2e46a575dd3b2894e2ffb2a2f0944df0c": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-07.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "脸与双肩近正视，书页位于腰部且朝上，整体视点接近人物眼高。"
+    },
+    "73e057dfa5c19e44587a2824a6e3dea2e3c75daf654456459f746df9b5c5ba89": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-08.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "躯干和腿沿花墙向下延伸，地面只露出窄边。手持帽子的倾斜角度不代表镜头俯仰。"
+    },
+    "e3c40d57c2a5d3f891913af7395bff7774e6565b4386e094de46422eacde7bfa": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-09.jpg",
+      "angle": "unknown",
+      "confidence": "low",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "近距离拍摄屈膝人物，伸向前景的手臂和膝盖产生明显透视，背景缺少固定参照。"
+    },
+    "b2ec46da09f81100dbfe4c457e8560bffec869b533553b1f70960dab7c1c8cc0": {
+      "image": ".pose-local/retrieval/xhs/processed/wall-10.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.xiaohongshu.com/explore/6ac31478000000001203b904",
+      "evidence": "人物转头看向与眼部接近的镜头，右侧小径仍只占画面下部。"
+    },
+    "7f8c2b7e8d5353a1ae7d16a178793951482f8ebf4e736d4edcb73e3159fa099b": {
+      "image": ".pose-local/retrieval/xhs/held-out/field-03-reference.jpg",
+      "angle": "high",
+      "confidence": "high",
+      "source": "用户提供的浏览器截图裁切，见本地 screenshot-provenance.json",
+      "evidence": "镜头明显高于坐姿人物的眼睛。能看到向上看的脸、肩和鞋的上部，以及人物周围向上延伸的地面。"
+    },
+    "fbf42548f28cbc227b9f974e6afc1e3f01901c8eb8c047e774fb1cd42b6fea98": {
+      "image": ".pose-local/retrieval/xhs/held-out/field-03-query.jpg",
+      "angle": "high",
+      "confidence": "medium",
+      "source": "用户提供的浏览器截图裁切，见本地 screenshot-provenance.json",
+      "evidence": "视线向下进入花丛，叶丛间地面出现在画面中。同一截图的有人画面可辅助判断。"
+    },
+    "0495ef0a02861d961926d363bf703b39f72a44954f270d79922f66800003861d": {
+      "image": ".pose-local/retrieval/xhs/gallery/field-04-reference.jpg",
+      "angle": "low",
+      "confidence": "high",
+      "source": "用户截图裁切，原帖 https://www.xiaohongshu.com/explore/6af6ab3e00000000180386c8",
+      "evidence": "前景能看到多朵花的背面，画面从花茎间朝人物和天空向上取景。"
+    },
+    "408dd98fe8f4dde8813cbf0106d8f0748fef5e71c9ce3bdd6d8683ba23d58a8c": {
+      "image": ".pose-local/retrieval/xhs/empty-field/cosmos-30096255.jpg",
+      "angle": "low",
+      "confidence": "medium",
+      "source": "https://www.pexels.com/photo/vibrant-summer-garden-with-blooming-cosmos-flowers-30096255/",
+      "evidence": "镜头贴近花层，从花茎之间向远处树和天空取景，一些高花能看见背面。这里的参照是花层。"
+    },
+    "84f63f32180a8034146d3f74ea62b090381b52ffd5516efc576c597562e36684": {
+      "image": ".pose-local/retrieval/xhs/empty-field/cosmos-30400812.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "https://www.pexels.com/photo/vibrant-field-of-pink-cosmos-flowers-in-bloom-30400812/",
+      "evidence": "能看见花茎的侧面和连续向后延伸的花层。机位大致贴近花层，未见明显俯仰。"
+    },
+    "a41ef028a9af054e199228054f2ff894482f4f8f0dee0a78759512adaaadafca": {
+      "image": ".pose-local/retrieval/xhs/empty-field/cosmos-36254852.jpg",
+      "angle": "unknown",
+      "confidence": "low",
+      "source": "https://www.pexels.com/photo/blooming-pink-and-white-cosmos-flowers-in-field-36254852/",
+      "evidence": "浅景深花朵特写没有可见地平线或明确地面，花朵自身朝向不一，难以判断整体俯仰。"
+    },
+    "7848b6ba5508e87122dccc23e5c069ad58eedb13743507c6d22e055a7aa609bd": {
+      "image": "public/field-cases/scene-alley.jpg",
+      "angle": "level",
+      "confidence": "high",
+      "source": "仓库内对照图",
+      "evidence": "建筑竖线接近直立，路面与两侧墙体向画面中部的远端汇聚。"
+    },
+    "5d964baf0f983dac0ec320b779b22d2b4d91c3d1f6fb1e1f249c20eb26dc32a2": {
+      "image": "public/field-cases/scene-bench.jpg",
+      "angle": "level",
+      "confidence": "medium",
+      "source": "仓库内对照图",
+      "evidence": "长椅侧面和椅面下方仍可见，且保留了远处树线和天空。整体接近平视，略朝下。"
+    },
+    "a7b42c0f4b3268b71b99dcbc5b5246e702af61faa986ce5a3e380041926682a7": {
+      "image": ".pose-local/retrieval/queries/flower-background-crop.jpg",
+      "angle": "high",
+      "confidence": "medium",
+      "source": "用户提供的浏览器截图裁切，早期评估输入",
+      "evidence": "花丛与露出的地面形成连续向下的视角，与本地 field-03 的纯背景裁切一致。"
+    }
+  }
+}

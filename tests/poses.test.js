@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { poses, guidance, validatePose, placeReference } from '../src/poses.js';
+import { posesDiffer } from '../src/photo-advice.js';
+
+test('pose choices distinguish a distant wrist movement from reframing the same pose', () => {
+  const small = Array.from({ length: 17 }, (_, i) => ({
+    x: 0.4 + (i % 2) * 0.015, y: 0.4 + i * 0.008, visibility: 1,
+  }));
+  const reframed = small.map(p => ({ ...p, x: 1.2 * p.x + 0.04, y: 1.2 * p.y - 0.02 }));
+  assert.equal(posesDiffer(small, reframed, 1.5), false);
+  const raisedWrist = small.map((p, i) => i === 9 ? { ...p, y: p.y - 0.03 } : p);
+  assert.equal(posesDiffer(small, raisedWrist, 1.5), true);
+});
 test('演示姿势覆盖三种场景且数据有效',()=>{for(const scene of ['park','street','indoor'])assert.ok(poses.filter(p=>p.scene===scene).length>=5);assert.ok(poses.every(validatePose));});
 test('缺少关键点时要求重新入镜',()=>assert.match(guidance([],poses[0].points),/全身/));
 test('与参考一致时保持姿势',()=>assert.equal(guidance(poses[0].points,poses[0].points),'很好，保持这个姿势'));
