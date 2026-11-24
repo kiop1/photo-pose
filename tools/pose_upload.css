@@ -1,0 +1,119 @@
+#pose-upload {
+  margin: 0 0 24px;
+  padding: clamp(14px, 3vw, 24px);
+  background: #18201d;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+#pose-upload h2 {
+  font-size: 1.2rem;
+}
+
+.pose-upload-intro p,
+.pose-upload-status {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.pose-upload-form {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 18rem) max-content max-content max-content;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.pose-upload-form :is(input, select, button) {
+  min-width: 0;
+  font: inherit;
+}
+
+.pose-upload-form :is(select, button),
+.pose-upload-form input::file-selector-button {
+  min-height: 40px;
+  padding: 6px 12px;
+  color: var(--text);
+  background: #111614;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.pose-upload-form input::file-selector-button {
+  margin-right: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pose-upload-form button {
+  color: #111614;
+  background: var(--accent);
+  border-color: transparent;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.pose-upload-form button:disabled {
+  color: var(--muted);
+  background: #27332d;
+  cursor: default;
+}
+
+.pose-upload-form :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pose-upload-status:not(:empty),
+.pose-upload-preview {
+  margin-top: 14px;
+}
+
+.pose-upload-preview img {
+  width: auto;
+  max-width: 100%;
+  max-height: 320px;
+  aspect-ratio: auto;
+}
+
+.pose-upload-results article {
+  margin-top: 14px;
+  padding: 14px 0 0;
+}
+
+.pose-upload-results h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pose-upload-background {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.pose-upload-background img {
+  max-height: 220px;
+}
+
+@media (max-width: 720px) {
+  .pose-upload-form {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .pose-upload-form :is(select, button) {
+    justify-self: start;
+  }
+
+  .pose-upload-form button {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .pose-upload-photos {
+    gap: 12px;
+  }
+
+  .pose-upload-background {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

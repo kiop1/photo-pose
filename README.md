@@ -27,12 +27,38 @@ MediaPipe WASM 和姿态模型随项目提供，首次加载需联网获取 Tens
 | llama.cpp | 需要 Python 3 和 `llama-server`（macOS 可用 `brew install llama.cpp`）。下载 ShutterMuse Q4_K_M 和配套视觉投影，共约 6.19 GB。 | `npm run shuttermuse -- llama` |
 | MLX | 需要 Apple Silicon 和 `uv`（`brew install uv`）。在独立的 Python 3.12 环境中下载官方 BF16 权重（约 17.6 GB），并转换为 4-bit。磁盘需能同时容纳原始权重、转换结果和依赖。 | `npm run shuttermuse -- mlx` |
 
-模型按后端分别缓存在 `.pose-models/`，也可以通过 `SHUTTERMUSE_CACHE_DIR` 指定目录。重启会复用已有权重。模型就绪后，点「去相机拍照」按下快门，或在试拍页选一张照片。原图旁会自动显示一句可选的姿势建议。所有照片使用同一条后台指令。如果当前姿势已经合适，模型可以建议保持。
+模型按后端分别缓存在 `.pose-models/`，也可以通过 `SHUTTERMUSE_CACHE_DIR` 指定目录。重启会复用已有权重。模型就绪后，点「去相机拍照」按下快门，或在试拍页选一张照片。三个姿势任务分两次调用本机模型。第一步读取原片，结合现场和当前景别写出具体动作。第二步读取同一张原片和刚生成的动作，预测目标姿势的 17 个关节及可见性。点「换个姿势」时，模型还会收到上一条建议。
 
-需要对照骨架或裁切范围时，展开「姿势与构图工具」。点「查看姿势骨架」可查看建议关节，点「查看构图建议」可查看取景建议。点「查看原片」可回到照片和最初的建议。[官方构图示例照片](https://github.com/lijayuTnT/ShutterMuse/blob/main/test/401128801616615964.webp)
+### 试跑论文图中的五类任务
+
+试拍页另有五张独立摄影原片。选择「摄影实测」里的照片会重新调用本机模型，也可以直接查看首轮的原片、骨架、模型原话和逐图核对记录。[五张摄影实测对照](public/field-cases/index.html)
+
+在试拍页的「论文示例原片」选择照片，点「试用示例」即可运行对应任务；也可以先选「试拍任务」，再上传自己的照片。九个示例取自用户提供的 ShutterMuse 展示图，部分画面保留了作者的网格或箭头。本机对照图使用示例 PNG 直接推理；交互试拍会把照片转成 JPEG 后推理，结果可能略有变化。页面可分别查看原片、模型预测和实际裁切。[作者项目](https://github.com/lijayuTnT/ShutterMuse) · [论文展示图](public/pose-examples/paper-figure.jpg) · [九张本机实测](public/pose-examples/local-results.jpg)
+
+| 任务 | 示例 | 可以对照的结果 |
+| --- | --- | --- |
+| a · 构图判断 | 街巷人像、倾斜湖面、光影人像 | 模型选择保留、裁切或重新取景。需要退后重拍时，以文字提示摄影师。 |
+| b · 指令裁切 | 湖边人像、山景人像 | 分别试横向 4:3 和半身。切换「按建议裁切」查看保留下来的原片像素。 |
+| c · 空场景姿势 | 台阶、江边护栏 | 从空景预测人物站位、动作和关节，生成示意图时在场景里加入人物。 |
+| d · 构图与姿势 | 果园 | 在原片上同时显示建议画框和目标骨架。生图时裁切场景，并把关节换算到裁后坐标。 |
+| e · 人像姿势调整 | 咖啡馆 | 根据已有的人物推荐动作，可切换原片与骨架，或点「换个姿势」。 |
+
+三个姿势任务支持填写拍摄要求。试拍页请求最多三种动作，先显示第一种，再为其他候选逐个计算骨架。点选就绪方案可以对照文字和关节，再点「生成 AI 示意图」生成这一种动作。模型分析、框选和照片裁切均可单独在本机完成。论文作者使用 GPT-Image-2 将关键点渲染成人像。当前项目使用本机网关配置的图像编辑渠道。[作者演示说明](https://lijayutnt.github.io/ShutterMuse/)
+
+要在模型启动后重跑果园原图，执行 `node tools/shuttermuse-infer.mjs public/pose-examples/joint-orchard.png joint`；4:3 示例可运行 `node tools/shuttermuse-infer.mjs public/pose-examples/crop-ratio.png crop 4:3 368 275`。
 
 单独调用模型获取一句拍摄建议，可运行 `node tools/shuttermuse-infer.mjs public/pose-images/mountain-sunrise.jpg advice`。单独启动模型的命令是 `python3 tools/shuttermuse-server.py llama` 或 `python3 tools/shuttermuse-server.py mlx`。[官方任务说明](https://github.com/lijayuTnT/ShutterMuse#quick-start) · [官方权重](https://huggingface.co/ShutterMuse/ShutterMuse) · [社区 GGUF 权重](https://huggingface.co/prithivMLmods/ShutterMuse-GGUF)
 
 ### 山顶背影实测
 
 把项目自带的山顶照片缩至 640 × 427，用 llama.cpp 在 CPU 上运行 ShutterMuse Q4_K_M，单次耗时约 117 秒。模型建议面向山峦、双臂展开、左腿迈步。绿色骨架画出了双臂展开，但双膝和脚踝几乎等高，图上很难看出迈步。打开[原始照片](public/pose-images/mountain-sunrise.jpg)、[建议骨架叠加图](docs/shuttermuse/sample-overlay.jpg)和[本次返回的 17 个坐标与文字](docs/shuttermuse/sample-pose.json)可对照查看。
+
+### 按拍摄建议生成 AI 示意图
+
+若网关的 OpenRouter 图像适配器在 `Edit()` 中直接返回 `ACTION_NOT_SUPPORTED`，先在网关仓库应用 [OpenRouter 图像编辑补丁](tools/patches/openrouter-image-edit.patch)，再重新启动网关。补丁使用 Chat Completions 发送拍摄建议和原图。
+
+在本机 `agent-gateway` 仓库运行 `HTTP_ADDR=127.0.0.1:8080 go run ./cmd/gateway`。如果 ShutterMuse 已在 8081 运行，在 Photo Pose 目录执行 `npm run shuttermuse -- existing`。首次启动模型仍用上面的 `llama` 或 `mlx` 命令。若网关用了其他端口，在 Photo Pose 进程设置 `AGENT_GATEWAY_PORT`。
+
+拍照或选图后先在本机生成一句建议。点「生成 AI 示意图」后，Photo Pose 通过网关的游客登录获取会话，用干净照片（长边最多 1280 像素）、当前方案的独立骨架参考图、可见关节的归一化坐标和动作指令调用 `POST /v1/images/edits`，再按返回的任务编号查询结果。请求使用 `model: "group:image_edit"`，可以在 Portal 的 Route Groups → `image_edit` 中切换默认图像编辑模型。图像渠道和供应商密钥由网关管理。每次安装的游客设备 ID 保存在 `.pose-local/gateway-device-id`。如需使用已有网关账号，可在服务端设置 `AGENT_GATEWAY_TOKEN` 使用该账号的有效访问令牌。
+
+两张输入图按原片、目标骨架的顺序提交给支持多图输入的编辑模型。网关会记录提交的照片和指令，并通过图像编辑渠道返回成片的 HTTPS 链接。生成可能产生费用；取消等待后，网关已受理的任务仍可继续。

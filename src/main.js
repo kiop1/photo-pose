@@ -1,5 +1,6 @@
 import './style.css';
-import { isLocalStudio, requestPhotoAdvice } from './photo-advice.js';
+import { drawTargetPose, isLocalStudio, requestPhotoPose } from './photo-advice.js';
+import { mountPhotoPreview, photoPreviewMarkup } from './photo-preview.js';
 import { poses, guidance, validatePose, placeReference } from './poses.js';
 import { drawSkeleton, drawPoseThumbnail } from './draw.js';
 import { analyzePixels, rankPoses } from './scene-analysis.js';
@@ -8,7 +9,7 @@ import * as mobilenet from '@tensorflow-models/mobilenet';
 import '@tensorflow/tfjs';
 
 const app=document.querySelector('#app');
-app.innerHTML=`<main class="shell"><header><div><span class="eyebrow">POSE STUDIO · 姿势灵感</span><h1>记录自然的你<span>✳</span></h1><p>让眼前的场景，给你一点拍照灵感。</p></div><button id="switch" class="icon-button" aria-label="切换相机">⇄</button></header><section class="camera"><video id="video" autoplay playsinline muted></video><img id="uploaded" alt="上传的照片预览" hidden><canvas id="overlay"></canvas><div class="camera-empty" id="empty"><div class="focus-icon">⌗</div><strong>准备好拍一张了吗？</strong><span>开启相机，寻找适合此刻的姿势</span><button id="start" class="primary">开启相机</button><button id="upload-start" class="secondary">上传照片</button></div><div class="camera-top"><span class="live" id="source-label">● 实时取景</span><span id="model-status">等待相机</span><button id="upload" class="camera-upload">上传照片</button></div><div id="hint" class="hint">选择一个姿势，开始引导</div></section><section class="controls"><div class="section-heading"><div><span class="eyebrow">FIND YOUR POSE</span><h2>选择拍摄场景</h2></div><span id="scene-status" class="status">手动选择</span></div><div class="chips" id="chips"><button data-scene="park">🌿 公园</button><button data-scene="street">◧ 街道</button><button data-scene="indoor">⌂ 室内</button><button data-scene="mountain">⛰ 山景</button></div><div class="section-heading poses-heading"><div><span class="eyebrow">POSE IDEAS</span><h2>为你推荐的姿势</h2></div><div><button id="more" class="text-button">换一组</button><button id="import" class="text-button">＋ 导入素材</button></div></div><div class="pose-list" id="pose-list"></div><p class="privacy">✳ 画面分析在本机进行 · 构图位置仅供参考 · <a href="./shuttermuse.html" style="color:inherit">ShutterMuse 拍照建议</a></p></section><div class="bottom"><button id="capture" class="shutter" aria-label="拍照"><span></span></button><span>${isLocalStudio ? '拍照后在本机获取建议' : '轻触拍摄'}</span></div></main><dialog id="preview"><div class="dialog-head"><strong>拍摄预览</strong><button id="close" class="icon-button" aria-label="关闭">×</button></div><img id="photo" alt="拍摄照片预览"><p id="photo-advice" role="status" hidden></p><button type="button" id="retry-advice" class="text-button" hidden>重试建议</button><a id="save" class="primary" download="pose-photo.png">保存照片</a></dialog><input type="file" id="scene-file" accept="image/*" hidden><input type="file" id="json-file" accept="application/json" hidden><input type="file" id="image-file" accept="image/*" hidden>`;
+app.innerHTML=`<main class="shell"><header><div><span class="eyebrow">POSE STUDIO · 姿势灵感</span><h1>记录自然的你<span>✳</span></h1><p>让眼前的场景，给你一点拍照灵感。</p></div><button id="switch" class="icon-button" aria-label="切换相机">⇄</button></header><section class="camera"><video id="video" autoplay playsinline muted></video><img id="uploaded" alt="上传的照片预览" hidden><canvas id="overlay"></canvas><div class="camera-empty" id="empty"><div class="focus-icon">⌗</div><strong>准备好拍一张了吗？</strong><span>开启相机，寻找适合此刻的姿势</span><button id="start" class="primary">开启相机</button><button id="upload-start" class="secondary">上传照片</button></div><div class="camera-top"><span class="live" id="source-label">● 实时取景</span><span id="model-status">等待相机</span><button id="upload" class="camera-upload">上传照片</button></div><div id="hint" class="hint">选择一个姿势，开始引导</div></section><section class="controls"><div class="section-heading"><div><span class="eyebrow">FIND YOUR POSE</span><h2>选择拍摄场景</h2></div><span id="scene-status" class="status">手动选择</span></div><div class="chips" id="chips"><button data-scene="park">🌿 公园</button><button data-scene="street">◧ 街道</button><button data-scene="indoor">⌂ 室内</button><button data-scene="mountain">⛰ 山景</button></div><div class="section-heading poses-heading"><div><span class="eyebrow">POSE IDEAS</span><h2>为你推荐的姿势</h2></div><div><button id="more" class="text-button">换一组</button><button id="import" class="text-button">＋ 导入素材</button></div></div><div class="pose-list" id="pose-list"></div><p class="privacy">✳ 画面分析在本机进行 · 构图位置仅供参考 · <a href="./shuttermuse.html" style="color:inherit">ShutterMuse 拍照建议</a></p></section><div class="bottom"><button id="capture" class="shutter" aria-label="拍照"><span></span></button><span>${isLocalStudio ? '拍照后在本机获取建议' : '轻触拍摄'}</span></div></main><dialog id="preview"><div class="dialog-head"><strong>照片预览</strong><button id="close" class="icon-button" aria-label="关闭">×</button></div><img id="photo" alt="原片预览"><canvas id="photo-pose" role="img" aria-label="叠加建议姿势骨架的照片" hidden></canvas><button type="button" id="toggle-photo-pose" class="text-button" hidden>查看原片</button><a id="save" class="primary" download="pose-photo.png">保存原片</a><p id="photo-advice" role="status" hidden></p><p id="capture-pose-error" role="status" hidden></p><button type="button" id="retry-advice" class="text-button" hidden>重试建议</button><button type="button" id="alternate-pose" class="text-button" hidden>换个姿势</button>${photoPreviewMarkup()}</dialog><input type="file" id="scene-file" accept="image/*" hidden><input type="file" id="json-file" accept="application/json" hidden><input type="file" id="image-file" accept="image/*" hidden>`;
 const $=s=>document.querySelector(s), video=$('#video'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 let library=[...poses], scene=null, selected=poses[0], stream=null, facing='environment', landmarker=null, classifier=null, frame=0, lastScene=0, sceneLocked=false, imageUrl=null, uploadedUrl=null, stillLandmarker=null, stillPoints=null, inputMode='camera', analysis=null, lastLayout=0, poseLocked=false, page=0;
 const labels={park:'公园',street:'街道',indoor:'室内',mountain:'山景'};
@@ -73,23 +74,66 @@ $('#scene-file').onchange=e=>{const file=e.target.files?.[0];if(file)loadScenePh
 $('#start').onclick=startCamera;$('#switch').onclick=()=>{facing=facing==='user'?'environment':'user';video.classList.toggle('mirror',facing==='user');if(stream || inputMode==='photo')startCamera();};
 $('#chips').onclick=e=>{const b=e.target.closest('[data-scene]');if(!b)return;scene=b.dataset.scene;sceneLocked=true;poseLocked=false;page=0;selected=defaultPose();$('#scene-status').textContent='已手动选择';$('#hint').textContent=`推荐姿势：${selected.name}`;render();if(inputMode==='photo')drawStill();};
 const preview = $('#preview');
+const originalPhoto = $('#photo');
+const poseOverlay = $('#photo-pose');
+const togglePhotoPose = $('#toggle-photo-pose');
+const alternatePose = $('#alternate-pose');
 const adviceStatus = $('#photo-advice');
+const poseError = $('#capture-pose-error');
 const retryAdvice = $('#retry-advice');
+const setPreviewPose = mountPhotoPreview();
 let adviceRequest;
 let capturedPhoto;
+let capturedPose;
 
-async function analyzeCapture() {
+function showCapturePose(showPose) {
+  poseOverlay.hidden = !showPose;
+  originalPhoto.hidden = showPose;
+  togglePhotoPose.textContent = showPose ? '查看原片' : '查看姿势骨架';
+}
+
+function clearCapturePose() {
+  setPreviewPose(null, null);
+  showCapturePose(false);
+  togglePhotoPose.hidden = alternatePose.hidden = poseError.hidden = true;
+  capturedPose = null;
+}
+
+function renderCapturePose(photo, result) {
+  const scale = Math.min(1, 640 / Math.max(photo.width, photo.height));
+  poseOverlay.width = Math.max(1, Math.round(photo.width * scale));
+  poseOverlay.height = Math.max(1, Math.round(photo.height * scale));
+  const context = poseOverlay.getContext('2d');
+  context.drawImage(photo, 0, 0, poseOverlay.width, poseOverlay.height);
+  drawTargetPose(context, result.landmarks, poseOverlay.width, poseOverlay.height);
+  adviceStatus.textContent = result.suggestion;
+  showCapturePose(true);
+  togglePhotoPose.hidden = alternatePose.hidden = false;
+  capturedPose = result;
+  setPreviewPose(photo, result);
+}
+
+async function analyzeCapture(previousPose) {
   adviceRequest?.abort();
   const request = new AbortController();
   adviceRequest = request;
+  const photo = capturedPhoto;
   retryAdvice.hidden = true;
+  clearCapturePose();
   adviceStatus.hidden = false;
-  adviceStatus.textContent = '正在本机看这张照片…';
+  adviceStatus.textContent = '正在本机生成姿势建议…';
   try {
-    const suggestion = await requestPhotoAdvice(capturedPhoto, request.signal);
-    if (!request.signal.aborted) adviceStatus.textContent = suggestion;
+    const result = await requestPhotoPose(photo, request.signal, previousPose);
+    if (request.signal.aborted || !preview.open) return;
+    renderCapturePose(photo, result);
   } catch {
-    if (request.signal.aborted) return;
+    if (request.signal.aborted || !preview.open) return;
+    if (previousPose) {
+      renderCapturePose(photo, previousPose);
+      poseError.textContent = '暂时无法换姿势，可以再试一次。';
+      poseError.hidden = false;
+      return;
+    }
     adviceStatus.textContent = '暂时无法获取拍摄建议，照片仍可保存。';
     retryAdvice.hidden = false;
   }
@@ -107,7 +151,7 @@ function showPhotoPreview(source, mirror = false) {
   }
   context.drawImage(source, 0, 0);
   const url = out.toDataURL('image/png');
-  $('#photo').src = url;
+  originalPhoto.src = url;
   $('#save').href = url;
   if (!preview.open) preview.showModal();
   if (isLocalStudio) {
@@ -121,15 +165,20 @@ $('#capture').onclick = () => {
   if (video.videoWidth) return showPhotoPreview(video, facing === 'user');
   $('#hint').textContent = '请先开启相机';
 };
-retryAdvice.onclick = analyzeCapture;
+retryAdvice.onclick = () => analyzeCapture();
+alternatePose.onclick = () => analyzeCapture(capturedPose);
+togglePhotoPose.onclick = () => showCapturePose(poseOverlay.hidden);
 $('#close').onclick = () => preview.close();
-preview.addEventListener('close', () => {
-  if (preview.open) return;
+function resetPhotoAdvice() {
   adviceRequest?.abort();
+  clearCapturePose();
   capturedPhoto = null;
   retryAdvice.hidden = adviceStatus.hidden = true;
+}
+preview.addEventListener('close', () => {
+  if (!preview.open) resetPhotoAdvice();
 });
-window.addEventListener('pagehide', () => adviceRequest?.abort());
+window.addEventListener('pagehide', resetPhotoAdvice);
 let pending=null;$('#import').onclick=()=>$('#json-file').click();$('#json-file').onchange=async e=>{try{pending=JSON.parse(await e.target.files[0].text());if(!validatePose(pending))throw Error('JSON 缺少名称、场景或 33 个有效关键点');$('#image-file').click();}catch(err){alert(`导入失败：${err.message}`);}e.target.value='';};
 /** 导入图片仅用于读取宽高比；推荐卡片只绘制关键点。 */
 $('#image-file').onchange=e=>{const file=e.target.files[0];if(!file||!pending)return;const imported={...pending,id:`import-${Date.now()}`,source:'用户导入 · 授权待自行确认'};const url=URL.createObjectURL(file);const image=new Image();image.onload=()=>{imported.imageAspect=image.naturalWidth/image.naturalHeight;URL.revokeObjectURL(url);render();if(selected?.id===imported.id&&inputMode==='photo')drawStill();};image.onerror=()=>{URL.revokeObjectURL(url);$('#scene-status').textContent='导入图片无法读取，请重试';};image.src=url;library.unshift(imported);scene=imported.scene;sceneLocked=true;page=0;selected=imported;$('#scene-status').textContent='已导入素材';pending=null;render();e.target.value='';};
