@@ -12,7 +12,19 @@ MediaPipe WASM 和姿态模型随项目提供，首次加载需联网获取 Tens
 
 查阅 `docs/素材候选.md`；候选链接不代表已获展示或本地解析授权。获得照片权利人及必要肖像许可并确认允许本地 Codex 解析后，由本地 Codex 查看图片，记录场景、动作、景别和描述；打开 `/material.html` 使用本地姿态模型提取 33 个归一化关键点并人工检查，下载 JSON。将图片与 JSON 一起导入页面。JSON 格式示例见 `tools/pose-template.json`。导入只保存在当前页面会话，刷新后需重新导入；避免上传未授权素材。
 
+## 本地场景向量检索
 
+上传一张现场照片，可以在参考图库里查找背景相似的照片，参考人物的站位和动作。DINOv2-Small 将场景编码为 384 维向量，存入本机 LanceDB。查询时用同一模型编码照片，检测到人物时先遮住人物，再按余弦相似度排列参考照片。分数越高，表示背景越相似。工具再按机位、景别和可见关节筛选姿势，将入选参考照的骨架叠加到查询照片上。
+
+在项目根目录用 `uv` 依次运行以下命令。第一条下载 CaptureGuide-Bench 研究样本并提取关键点，第二条用样本重建向量表，对自带的长椅和小巷照片执行检索，第三条启动本机上传页面。首次运行需要联网获取样本、依赖和模型权重。
+
+```sh
+uv run --python 3.12 --with 'mediapipe==0.10.21' --with 'numpy<2' --with pillow tools/pose_retrieval_samples.py
+uv run tools/pose_retrieval.py
+uv run tools/pose_retrieval_web.py --output-dir .pose-local/retrieval
+```
+
+打开[本机检索页](http://127.0.0.1:4186/)查看示例或上传自己的照片。命令行示例的得分和骨架坐标保存在 `.pose-local/retrieval/report/matches.json`。未标注的照片可由本机 ShutterMuse 估计机位，也可以在上传时手动选择查询照片的机位。
 
 ## 上传照片分析
 
@@ -54,8 +66,6 @@ MediaPipe WASM 和姿态模型随项目提供，首次加载需联网获取 Tens
 把项目自带的山顶照片缩至 640 × 427，用 llama.cpp 在 CPU 上运行 ShutterMuse Q4_K_M，单次耗时约 117 秒。模型建议面向山峦、双臂展开、左腿迈步。绿色骨架画出了双臂展开，但双膝和脚踝几乎等高，图上很难看出迈步。打开[原始照片](public/pose-images/mountain-sunrise.jpg)、[建议骨架叠加图](docs/shuttermuse/sample-overlay.jpg)和[本次返回的 17 个坐标与文字](docs/shuttermuse/sample-pose.json)可对照查看。
 
 ### 按拍摄建议生成 AI 示意图
-
-若网关的 OpenRouter 图像适配器在 `Edit()` 中直接返回 `ACTION_NOT_SUPPORTED`，先在网关仓库应用 [OpenRouter 图像编辑补丁](tools/patches/openrouter-image-edit.patch)，再重新启动网关。补丁使用 Chat Completions 发送拍摄建议和原图。
 
 在本机 `agent-gateway` 仓库运行 `HTTP_ADDR=127.0.0.1:8080 go run ./cmd/gateway`。如果 ShutterMuse 已在 8081 运行，在 Photo Pose 目录执行 `npm run shuttermuse -- existing`。首次启动模型仍用上面的 `llama` 或 `mlx` 命令。若网关用了其他端口，在 Photo Pose 进程设置 `AGENT_GATEWAY_PORT`。
 
